@@ -62,6 +62,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
     private final int passcodeRow = rowId++;
     private final int experimentRow = rowId++;
     private final int accessibilityRow = rowId++;
+    private final int blockedStickerPacksRow = rowId++;
 
     private final int channelRow = rowId++;
     private final int websiteRow = rowId++;
@@ -167,6 +168,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
         if (!PasscodeHelper.isSettingsHidden()) {
             items.add(UItem.asButton(passcodeRow, R.drawable.msg_secret, LocaleController.getString(R.string.PasscodeNeko)).slug("passcode"));
         }
+        items.add(UItem.asButton(blockedStickerPacksRow, R.drawable.msg_block, LocaleController.getString(R.string.BlockedStickerPacks)).slug("blockedstickers"));
         items.add(UItem.asButton(experimentRow, R.drawable.msg_fave, LocaleController.getString(R.string.NotificationsOther)).slug("experiment"));
         AccessibilityManager am = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
         if (am != null && am.isTouchExplorationEnabled()) {
@@ -211,6 +213,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (id == experimentRow) {
             presentFragment(new NekoExperimentalSettingsActivity());
+        } else if (id == blockedStickerPacksRow) {
+            presentFragment(new NekoBlockedStickerPacksActivity(currentAccount));
         } else if (id == accessibilityRow) {
             presentFragment(new AccessibilitySettingsActivity());
         } else if (id == channelRow) {
@@ -316,6 +320,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity implements Fa
             }
             searchResultList.add(new SearchResult(10000 + i, fragmentTitle, icon, () -> presentFragment(fragment)));
         }
+        searchResultList.add(new SearchResult(8001, LocaleController.getString(R.string.BlockedStickerPacks), R.drawable.msg_block, () -> presentFragment(new NekoBlockedStickerPacksActivity(currentAccount))));
         searchResultList.add(new SearchResult(8000, LocaleController.getString(R.string.EmojiUseDefault), null, LocaleController.getString(R.string.Chat), LocaleController.getString(R.string.EmojiSets), R.drawable.msg_theme, () -> {
             var fragment = new NekoEmojiSettingsActivity();
             presentFragment(fragment);

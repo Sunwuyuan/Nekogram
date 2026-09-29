@@ -1676,8 +1676,10 @@ public class ContentPreviewViewer {
     public void setParentActivity(Activity activity) {
         currentAccount = UserConfig.selectedAccount;
         centerImage.setCurrentAccount(currentAccount);
+        centerImage.setAllowBlockedStickerPreview(true);
         centerImage.setLayerNum(Integer.MAX_VALUE);
         effectImage.setCurrentAccount(currentAccount);
+        effectImage.setAllowBlockedStickerPreview(true);
         effectImage.setLayerNum(Integer.MAX_VALUE);
         if (parentActivity == activity) {
             return;
@@ -2236,6 +2238,31 @@ public class ContentPreviewViewer {
                 containerView.invalidate();
             }
         });
+    }
+
+    public boolean showBlockedStickerPreview(View view, TLRPC.Document document, int account) {
+        Activity activity = AndroidUtilities.findActivity(view.getContext());
+        if (activity == null || document == null) return false;
+        setParentActivity(activity);
+        currentAccount = account;
+        centerImage.setCurrentAccount(account);
+        effectImage.setCurrentAccount(account);
+        setDelegate(new ContentPreviewViewerDelegate() {
+            @Override
+            public long getDialogId() {
+                return 0;
+            }
+
+            @Override
+            public boolean needMenu() {
+                return false;
+            }
+        });
+        currentPreviewCell = view;
+        open(document, null, MessageObject.findAnimatedEmojiEmoticon(document, null, account), null, null,
+                MessageObject.isAnimatedEmoji(document) ? CONTENT_TYPE_EMOJI : CONTENT_TYPE_STICKER, false, null, null);
+        AndroidUtilities.cancelRunOnUIThread(showSheetRunnable);
+        return isVisible;
     }
 
     public boolean showMenuFor(View view) {

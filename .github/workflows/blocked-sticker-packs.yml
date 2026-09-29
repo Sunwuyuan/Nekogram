@@ -1,0 +1,40 @@
+name: Blocked sticker packs validation
+
+on:
+  push:
+    branches: ["tailgram/blocked-sticker-packs"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Test persistence, reveal lifecycle, and export isolation
+        run: python3 Tools/test_blocked_sticker_packs.py
+      - name: Check patch whitespace
+        run: git show --format= --check HEAD
+
+  android-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize Java build dependencies
+        run: git submodule update --init --depth 1 -- TMessagesProj_Modules/media TMessagesProj/lib/jlatexmath
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'build-tools;37.0.0 ndk;27.3.13750724 platforms;android-37.0 cmake;3.22.1'
+      - name: Compile Android feature sources without signing or publishing
+        run: ./gradlew :TMessagesProj:compileDebugJavaWithJavac --no-daemon --console=plain --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'

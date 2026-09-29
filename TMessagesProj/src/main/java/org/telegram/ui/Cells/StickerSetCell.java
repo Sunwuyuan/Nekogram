@@ -323,7 +323,10 @@ public class StickerSetCell extends FrameLayout {
 
         emojis = set.set.emojis;
         sideButtons.setVisibility(emojis ? View.VISIBLE : View.GONE);
-        optionsButton.setVisibility(emojis ? View.GONE : View.VISIBLE);
+        optionsButton.setVisibility(emojis && option != 1 ? View.GONE : View.VISIBLE);
+        MarginLayoutParams buttonsLayout = (MarginLayoutParams) sideButtons.getLayoutParams();
+        buttonsLayout.leftMargin = LocaleController.isRTL && emojis && option == 1 ? AndroidUtilities.dp(40) : 0;
+        buttonsLayout.rightMargin = !LocaleController.isRTL && emojis && option == 1 ? AndroidUtilities.dp(40) : 0;
         imageView.setColorFilter(null);
 
         ArrayList<TLRPC.Document> documents = set.documents;
@@ -488,6 +491,13 @@ public class StickerSetCell extends FrameLayout {
 
     public void setReorderable(boolean reorderable, boolean animated) {
         if (option == 1) {
+            if (emojis) {
+                optionsButton.animate().cancel();
+                optionsButton.setVisibility(reorderable ? GONE : VISIBLE);
+                optionsButton.setAlpha(1f);
+                optionsButton.setScaleX(1f);
+                optionsButton.setScaleY(1f);
+            }
 
             final float[] alphaValues = {reorderable ? 1f : 0f, reorderable ? 0f : 1f};
             final float[] scaleValues = {reorderable ? 1f : .66f, reorderable ? .66f : 1f};
@@ -598,7 +608,7 @@ public class StickerSetCell extends FrameLayout {
 
     public void updateRightMargin() {
         sideButtons.measure(MeasureSpec.makeMeasureSpec(999999, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58), MeasureSpec.EXACTLY));
-        final int margin = AndroidUtilities.dp(26) + sideButtons.getMeasuredWidth();
+        final int margin = AndroidUtilities.dp(26 + (emojis && option == 1 ? 40 : 0)) + sideButtons.getMeasuredWidth();
         if (LocaleController.isRTL) {
             ((MarginLayoutParams) textView.getLayoutParams()).leftMargin = margin;
             ((MarginLayoutParams) valueTextView.getLayoutParams()).leftMargin = margin;
@@ -709,6 +719,7 @@ public class StickerSetCell extends FrameLayout {
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
             final StickerSetCell cell = (StickerSetCell) view;
             final TLRPC.TL_messages_stickerSet set = (TLRPC.TL_messages_stickerSet) item.object;
+            cell.imageView.getImageReceiver().setCurrentAccount(adapter.currentAccount);
             cell.setStickersSet(set, divider);
             cell.setChecked(item.checked, false);
             cell.setReorderable(listView.isReorderAllowed(), true);

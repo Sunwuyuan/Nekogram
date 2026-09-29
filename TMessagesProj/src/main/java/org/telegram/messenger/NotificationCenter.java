@@ -27,6 +27,7 @@ public class NotificationCenter {
     private final static long EXPIRE_NOTIFICATIONS_TIME = 5017;
     private static int totalEvents = 1;
 
+    public static final int blockedStickerPacksChanged = totalEvents++;
     public static final int onUpdateLoginToken = totalEvents++;
 
     public static final int didReceiveNewMessages = totalEvents++;
@@ -780,7 +781,7 @@ public class NotificationCenter {
     private ArrayList<NotificationCenterDelegate> createArrayForId(int id) {
         // this notifications often add/remove
         // UniqArrayList for fast contains method check
-        if (id == didReplacedPhotoInMemCache || id == stopAllHeavyOperations || id == startAllHeavyOperations) {
+        if (id == didReplacedPhotoInMemCache || id == stopAllHeavyOperations || id == startAllHeavyOperations || id == blockedStickerPacksChanged) {
             return new UniqArrayList<>();
         }
         return new ArrayList<>();

@@ -753,6 +753,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             switch (holder.getItemViewType()) {
                 case 0:
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
+                    ((StickerEmojiCell) holder.itemView).getImageView().setCurrentAccount(currentAccount);
                     ((StickerEmojiCell) holder.itemView).setSticker(sticker, positionsToSets.get(position), false);
                     break;
                 case 1:

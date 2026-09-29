@@ -158,6 +158,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerDrawingScope;
+
 public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPaintView, PaintToolsView.Delegate, EntityView.EntityViewDelegate, PaintTextOptionsView.Delegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StoryRecorder.Touchable {
     private PaintCancelView cancelButton;
     private PaintDoneView doneButton;
@@ -2643,6 +2645,12 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     }
 
     public Bitmap getBitmap(ArrayList<VideoEditedInfo.MediaEntity> entities, int resultWidth, int resultHeight, boolean drawPaint, boolean drawEntities, boolean drawMessage, boolean drawBlur, StoryEntry entry) {
+        try (BlockedStickerDrawingScope ignored = new BlockedStickerDrawingScope()) {
+            return getUnfilteredBitmap(entities, resultWidth, resultHeight, drawPaint, drawEntities, drawMessage, drawBlur, entry);
+        }
+    }
+
+    private Bitmap getUnfilteredBitmap(ArrayList<VideoEditedInfo.MediaEntity> entities, int resultWidth, int resultHeight, boolean drawPaint, boolean drawEntities, boolean drawMessage, boolean drawBlur, StoryEntry entry) {
         Bitmap bitmap;
         if (drawPaint) {
             bitmap = renderView.getResultBitmap(false, drawBlur);

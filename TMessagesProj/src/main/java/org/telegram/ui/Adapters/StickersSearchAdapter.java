@@ -405,6 +405,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
             case 0: {
                 TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                 StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
+                cell.getImageView().setCurrentAccount(currentAccount);
                 cell.setSticker(sticker, null, cacheParent.get(position), positionToEmoji.get(position), false);
                 //cell.setRecent(recentStickers.contains(sticker) || favouriteStickers.contains(sticker));
                 break;

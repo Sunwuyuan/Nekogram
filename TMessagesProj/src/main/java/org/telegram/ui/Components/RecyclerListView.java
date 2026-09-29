@@ -1134,11 +1134,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                                 view.playSoundEffect(SoundEffectConstants.CLICK);
                             } catch (Exception ignore) {}
                             view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                            if (onItemClickListener != null) {
-                                onItemClickListener.onItemClick(view, position);
-                            } else if (onItemClickListenerExtended != null) {
-                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                            }
+                            dispatchItemClick(view, position, x - view.getX(), y - view.getY());
                         }
                         AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
                             @Override
@@ -1154,11 +1150,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                                         } catch (Exception ignore) {}
                                         view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
                                         if (position != -1) {
-                                            if (onItemClickListener != null) {
-                                                onItemClickListener.onItemClick(view, position);
-                                            } else if (onItemClickListenerExtended != null) {
-                                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                                            }
+                                            dispatchItemClick(view, position, x - view.getX(), y - view.getY());
                                         }
                                     }
                                 }
@@ -1965,11 +1957,22 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         return onItemClickListener;
     }
 
+    public interface ItemClickInterceptor {
+        boolean interceptItemClick();
+    }
+
     public void clickItem(View item, int position) {
+        dispatchItemClick(item, position, 0, 0);
+    }
+
+    private void dispatchItemClick(View item, int position, float x, float y) {
+        if (item instanceof ItemClickInterceptor && ((ItemClickInterceptor) item).interceptItemClick()) {
+            return;
+        }
         if (onItemClickListener != null) {
             onItemClickListener.onItemClick(item, position);
         } else if (onItemClickListenerExtended != null) {
-            onItemClickListenerExtended.onItemClick(item, position, 0, 0);
+            onItemClickListenerExtended.onItemClick(item, position, x, y);
         }
     }
 

@@ -32,10 +32,20 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
-public class StickerCell extends FrameLayout {
+public class StickerCell extends FrameLayout implements RecyclerListView.ItemClickInterceptor {
+
+    @Override
+    public boolean interceptItemClick() {
+        return imageView.getImageReceiver().revealBlockedSticker();
+    }
+
+    public void setCurrentAccount(int account) {
+        imageView.getImageReceiver().setCurrentAccount(account);
+    }
 
     private BackupImageView imageView;
     private TLRPC.Document sticker;
@@ -192,6 +202,11 @@ public class StickerCell extends FrameLayout {
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info){
         super.onInitializeAccessibilityNodeInfo(info);
+        if (imageView.getImageReceiver().isBlockedStickerHidden()) {
+            info.setText(LocaleController.getString(R.string.BlockedStickerReveal));
+            info.setEnabled(true);
+            return;
+        }
         if (sticker == null)
             return;
         String emoji = null;

@@ -83,6 +83,8 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPacksController;
+import tw.nekomimi.nekogram.helpers.BlockedStickerPreview;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 
 public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
@@ -238,6 +240,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
     private EmojiPacksAlert(BaseFragment fragment, Context context, Theme.ResourcesProvider resourceProvider, ArrayList<TLRPC.InputStickerSet> stickerSets, TLObject parentObject) {
         super(context, false, resourceProvider = fragment != null && fragment.getResourceProvider() != null ? fragment.getResourceProvider() : resourceProvider);
         this.fragment = fragment;
+        if (fragment != null) currentAccount = fragment.getCurrentAccount();
         fixNavigationBar();
 
         if (stickerSets != null) {
@@ -601,6 +604,8 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
         public void setPreviewEmoji(TLRPC.Document document) {
             previewImageReceiver = new ImageReceiver(this);
+            previewImageReceiver.setCurrentAccount(currentAccount);
+            previewImageReceiver.setAllowBlockedStickerPreview(true);
             if (attached) previewImageReceiver.onAttachedToWindow();
             previewImageVisible = true;
             previewImageVisibleT.set(1.0f, true);
@@ -800,7 +805,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
 
         public void updateEmojiDrawables() {
-            animatedEmojiDrawables = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, getAnimatedEmojiSpans(), animatedEmojiDrawables);
+            animatedEmojiDrawables = AnimatedEmojiSpan.update(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, this, getAnimatedEmojiSpans(), animatedEmojiDrawables);
         }
 
         @Override
@@ -1468,6 +1473,10 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
             return;
         }
         TLRPC.TL_messages_stickerSet stickerSet = customEmojiPacks.stickerSets.get(0);
+        if (id == 3) {
+            BlockedStickerPacksController.getInstance(currentAccount).toggle(stickerSet.set);
+            return;
+        }
         String stickersUrl;
         if (stickerSet.set != null && stickerSet.set.emojis) {
             stickersUrl = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addemoji/" + stickerSet.set.short_name;
@@ -1519,7 +1528,19 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         }
     }
 
-    public static class EmojiImageView extends View {
+    public static class EmojiImageView extends View implements RecyclerListView.ItemClickInterceptor {
+        private final BlockedStickerPreview blockedStickerPreview = new BlockedStickerPreview();
+
+        @Override
+        public boolean interceptItemClick() {
+            return blockedStickerPreview.onClick(this, imageReceiver, getDocument());
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            blockedStickerPreview.reset();
+            super.onDetachedFromWindow();
+        }
 
         public ImageReceiver.BackgroundThreadDrawHolder[] backgroundThreadDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
         public ImageReceiver imageReceiver;
@@ -1536,7 +1557,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 document = span.document;
                 if (document == null) {
                     long documentId = span.getDocumentId();
-                    document = AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, documentId);
+                    document = AnimatedEmojiDrawable.findDocument(imageReceiver != null ? imageReceiver.getCurrentAccount() : UserConfig.selectedAccount, documentId);
                 }
             }
             return document;
@@ -1731,7 +1752,13 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 addView(optionsButton, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 0, 5, 5 - backgroundPaddingLeft / AndroidUtilities.density, 0));
                 optionsButton.addSubItem(1, R.drawable.msg_share, LocaleController.getString(R.string.StickersShare));
                 optionsButton.addSubItem(2, R.drawable.msg_link, LocaleController.getString(R.string.CopyLink));
-                optionsButton.setOnClickListener(v -> optionsButton.toggleSubMenu());
+                ActionBarMenuSubItem blockItem = optionsButton.addSubItem(3, R.drawable.msg_block, LocaleController.getString(R.string.BlockStickerPack));
+                optionsButton.setOnClickListener(v -> {
+                    boolean blocked = set != null && BlockedStickerPacksController.getInstance(currentAccount).isBlocked(set.set);
+                    blockItem.setTextAndIcon(LocaleController.getString(blocked ? R.string.UnblockStickerPack : R.string.BlockStickerPack), blocked ? R.drawable.msg_cancel : R.drawable.msg_block);
+                    blockItem.setVisibility(set == null ? GONE : VISIBLE);
+                    optionsButton.toggleSubMenu();
+                });
                 optionsButton.setDelegate(EmojiPacksAlert.this::onSubItemClick);
                 optionsButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
             }

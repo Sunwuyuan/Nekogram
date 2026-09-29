@@ -661,6 +661,10 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     }
 
     public static LongSparseArray<AnimatedEmojiDrawable> update(int cacheType, View holder, AnimatedEmojiSpan[] spans, LongSparseArray<AnimatedEmojiDrawable> prev) {
+        return update(UserConfig.selectedAccount, cacheType, holder, spans, prev);
+    }
+
+    public static LongSparseArray<AnimatedEmojiDrawable> update(int currentAccount, int cacheType, View holder, AnimatedEmojiSpan[] spans, LongSparseArray<AnimatedEmojiDrawable> prev) {
         if (spans == null) {
             return prev;
         }
@@ -701,9 +705,9 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                     AnimatedEmojiDrawable drawable;
                     int localCacheType = span.standard ? AnimatedEmojiDrawable.STANDARD_LOTTIE_FRAME : (span.cacheType < 0 ? cacheType : span.cacheType);
                     if (span.document != null) {
-                        drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, localCacheType, span.document);
+                        drawable = AnimatedEmojiDrawable.make(currentAccount, localCacheType, span.document);
                     } else {
-                        drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, localCacheType, span.documentId);
+                        drawable = AnimatedEmojiDrawable.make(currentAccount, localCacheType, span.documentId);
                     }
                     drawable.addView(holder);
                     prev.put(span.getDocumentId(), drawable);

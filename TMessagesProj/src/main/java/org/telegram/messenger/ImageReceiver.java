@@ -54,7 +54,53 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerDrawingScope;
+import tw.nekomimi.nekogram.helpers.BlockedStickerFilter;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate, AnimatedEmojiSpan.InvalidateHolder {
+
+    private BlockedStickerFilter blockedStickerFilter;
+    private BlockedStickerFilter.Mosaic blockedStickerMosaic;
+    private boolean allowBlockedStickerPreview;
+    private TLRPC.Document blockedEmojiDocument;
+
+    private void bindBlockedStickerFilter(ImageLocation media, ImageLocation image, ImageLocation thumb, Object parent) {
+        blockedStickerFilter = BlockedStickerFilter.bind(this, blockedStickerFilter, media, image, thumb, parent);
+        if (attachedToWindow && blockedStickerFilter != null) blockedStickerFilter.attach();
+    }
+
+    private void updateBlockedEmojiBinding() {
+        AnimatedEmojiDrawable emoji = getAnimatedEmojiDrawable();
+        if (emoji != null && emoji.getDocument() != blockedEmojiDocument) {
+            blockedEmojiDocument = emoji.getDocument();
+            bindBlockedStickerFilter(null, null, null, emoji);
+        }
+    }
+
+    public boolean isBlockedStickerHidden() {
+        if (allowBlockedStickerPreview) return false;
+        updateBlockedEmojiBinding();
+        return blockedStickerFilter != null && blockedStickerFilter.shouldHide();
+    }
+
+    public boolean revealBlockedSticker() {
+        return isBlockedStickerHidden() && blockedStickerFilter.reveal();
+    }
+
+    public void resetBlockedStickerReveal() {
+        if (blockedStickerFilter != null) blockedStickerFilter.resetReveal();
+    }
+
+    public void setAllowBlockedStickerPreview(boolean allow) {
+        allowBlockedStickerPreview = allow;
+        invalidate();
+    }
+
+    public boolean drawUnfiltered(Canvas canvas, BackgroundThreadDrawHolder holder) {
+        try (BlockedStickerDrawingScope ignored = new BlockedStickerDrawingScope()) {
+            return drawInternal(canvas, holder);
+        }
+    }
 
     List<ImageReceiver> preloadReceivers;
     private boolean allowCrossfadeWithImage = true;
@@ -597,6 +643,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             setImageBackup.clear();
         }
 
+        final boolean hideOldSticker = isBlockedStickerHidden();
+        blockedEmojiDocument = null;
+        bindBlockedStickerFilter(mediaLocation, imageLocation, thumbLocation, parentObject);
         if (imageLocation == null && thumbLocation == null && mediaLocation == null) {
             for (int a = 0; a < 4; a++) {
                 recycleBitmap(null, a);
@@ -700,7 +749,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             thumbKey += "@" + thumbFilter;
         }
 
-        if (crossfadeWithOldImage) {
+        if (crossfadeWithOldImage && !hideOldSticker) {
             if (currentParentObject instanceof MessageObject && ((MessageObject) currentParentObject).lastGeoWebFileSet != null && MessageObject.getMedia((MessageObject) currentParentObject) instanceof TLRPC.TL_messageMediaGeoLive) {
                 ((MessageObject) currentParentObject).lastGeoWebFileLoaded = ((MessageObject) currentParentObject).lastGeoWebFileSet;
             }
@@ -878,9 +927,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setImageBitmap(Drawable bitmap) {
+        final boolean hideOldSticker = isBlockedStickerHidden();
+        blockedEmojiDocument = bitmap instanceof AnimatedEmojiDrawable ? ((AnimatedEmojiDrawable) bitmap).getDocument() : null;
+        bindBlockedStickerFilter(null, null, null, bitmap instanceof AnimatedEmojiDrawable ? bitmap : null);
         ImageLoader.getInstance().cancelLoadingForImageReceiver(this, true);
 
-        if (crossfadeWithOldImage) {
+        if (crossfadeWithOldImage && !hideOldSticker) {
             if (currentImageDrawable != null) {
                 recycleBitmap(null, TYPE_THUMB);
                 recycleBitmap(null, TYPE_CROSSFDADE);
@@ -1105,6 +1157,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return;
         }
         attachedToWindow = false;
+        if (blockedStickerFilter != null) blockedStickerFilter.detach();
+        blockedStickerMosaic = null;
         if (currentImageLocation != null || currentMediaLocation != null || currentThumbLocation != null || staticThumbDrawable != null) {
             if (setImageBackup == null) {
                 setImageBackup = new SetImageBackup();
@@ -1189,6 +1243,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return false;
         }
         attachedToWindow = true;
+        if (blockedStickerFilter != null) blockedStickerFilter.attach();
         currentOpenedLayerFlags = NotificationCenter.getGlobalInstance().getCurrentHeavyOperationFlags();
         currentOpenedLayerFlags &= ~currentLayerNum;
         if (!ignoreNotifications) {
@@ -1871,6 +1926,39 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public boolean draw(Canvas canvas, BackgroundThreadDrawHolder backgroundThreadDrawHolder) {
+        if (BlockedStickerDrawingScope.isUnfiltered()) return drawInternal(canvas, backgroundThreadDrawHolder);
+        if (backgroundThreadDrawHolder == null ? allowBlockedStickerPreview : backgroundThreadDrawHolder.unfilteredBlockedSticker) {
+            return drawUnfiltered(canvas, backgroundThreadDrawHolder);
+        }
+        final boolean hidden = backgroundThreadDrawHolder == null ? isBlockedStickerHidden() : backgroundThreadDrawHolder.blockedSticker;
+        if (!hidden) {
+            if (backgroundThreadDrawHolder == null && blockedStickerFilter != null && getAnimatedEmojiDrawable() != null) {
+                return drawUnfiltered(canvas, null);
+            }
+            return drawInternal(canvas, backgroundThreadDrawHolder);
+        }
+        if (!isVisible) return false;
+        final float x = backgroundThreadDrawHolder == null ? imageX : backgroundThreadDrawHolder.imageX;
+        final float y = backgroundThreadDrawHolder == null ? imageY : backgroundThreadDrawHolder.imageY;
+        final float width = backgroundThreadDrawHolder == null ? imageW : backgroundThreadDrawHolder.imageW;
+        final float height = backgroundThreadDrawHolder == null ? imageH : backgroundThreadDrawHolder.imageH;
+        if (width <= 0 || height <= 0) return false;
+        final BlockedStickerFilter.Mosaic mosaic;
+        if (backgroundThreadDrawHolder == null) {
+            if (blockedStickerMosaic == null) blockedStickerMosaic = new BlockedStickerFilter.Mosaic();
+            mosaic = blockedStickerMosaic;
+        } else {
+            if (backgroundThreadDrawHolder.blockedStickerMosaic == null) backgroundThreadDrawHolder.blockedStickerMosaic = new BlockedStickerFilter.Mosaic();
+            mosaic = backgroundThreadDrawHolder.blockedStickerMosaic;
+        }
+        try {
+            return drawInternal(mosaic.begin(x, y, width, height), backgroundThreadDrawHolder);
+        } finally {
+            mosaic.end(canvas);
+        }
+    }
+
+    private boolean drawInternal(Canvas canvas, BackgroundThreadDrawHolder backgroundThreadDrawHolder) {
         boolean result = false;
         if (gradientBitmap != null && currentImageKey != null) {
             canvas.save();
@@ -2594,7 +2682,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setCurrentAccount(int value) {
+        if (currentAccount == value) return;
         currentAccount = value;
+        bindBlockedStickerFilter(currentMediaLocation, currentImageLocation, currentThumbLocation, currentParentObject);
     }
 
     public int[] getRoundRadius() {
@@ -3287,6 +3377,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (holder == null) {
             holder = new BackgroundThreadDrawHolder();
         }
+        holder.blockedSticker = isBlockedStickerHidden();
+        holder.unfilteredBlockedSticker = allowBlockedStickerPreview || !holder.blockedSticker && blockedStickerFilter != null && getAnimatedEmojiDrawable() != null;
         holder.threadIndex = threadIndex;
         holder.animation = getAnimation();
         holder.lottieDrawable = getLottieAnimation();
@@ -3338,6 +3430,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public static class BackgroundThreadDrawHolder {
+        private boolean blockedSticker;
+        private boolean unfilteredBlockedSticker;
+        private BlockedStickerFilter.Mosaic blockedStickerMosaic;
         public boolean animationNotReady;
         public float overrideAlpha;
         public long time;

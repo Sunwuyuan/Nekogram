@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoAppearanceSettingsActivity;
+import tw.nekomimi.nekogram.settings.NekoBlockedStickerPacksActivity;
 import tw.nekomimi.nekogram.settings.NekoChatSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoDonateActivity;
 import tw.nekomimi.nekogram.settings.NekoEmojiSettingsActivity;
@@ -61,6 +62,9 @@ public class SettingsHelper {
                     case "experimental":
                     case "e":
                         fragment = new NekoExperimentalSettingsActivity();
+                        break;
+                    case "blockedstickers":
+                        fragment = new NekoBlockedStickerPacksActivity();
                         break;
                     case "emoji":
                         fragment = new NekoEmojiSettingsActivity();

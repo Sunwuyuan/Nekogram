@@ -72,6 +72,8 @@ public class StickerView extends EntityView {
 
         mirrorT = new AnimatedFloat(containerView, 0, 500, CubicBezierInterpolator.EASE_OUT_QUINT);
 
+        // This sticker was explicitly selected for authoring, not received in a chat.
+        centerImage.setAllowBlockedStickerPreview(true);
         centerImage.setAspectFit(true);
         centerImage.setInvalidateAll(true);
         centerImage.setParentView(containerView);

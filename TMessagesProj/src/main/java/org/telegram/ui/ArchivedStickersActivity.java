@@ -31,6 +31,7 @@ import org.telegram.ui.Cells.ArchivedStickerSetCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
@@ -38,6 +39,8 @@ import org.telegram.ui.Components.StickersAlert;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import tw.nekomimi.nekogram.helpers.BlockedStickerPacksController;
 
 public class ArchivedStickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -329,6 +332,15 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 final int stickerSetPosition = position - stickersStartRow;
                 ArchivedStickerSetCell cell = (ArchivedStickerSetCell) holder.itemView;
                 TLRPC.StickerSetCovered stickerSet = sets.get(stickerSetPosition);
+                cell.setCurrentAccount(currentAccount);
+                cell.setOnOptionsClick(v -> {
+                    BlockedStickerPacksController blockedPacks = BlockedStickerPacksController.getInstance(currentAccount);
+                    boolean blocked = blockedPacks.isBlocked(stickerSet.set);
+                    ItemOptions.makeOptions(ArchivedStickersActivity.this, cell)
+                            .add(blocked ? R.drawable.msg_cancel : R.drawable.msg_block,
+                                    LocaleController.getString(blocked ? R.string.UnblockStickerPack : R.string.BlockStickerPack), () -> blockedPacks.toggle(stickerSet.set))
+                            .show();
+                });
                 cell.setStickersSet(stickerSet, stickerSetPosition != sets.size() - 1);
                 final boolean isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
                 cell.setChecked(isInstalled, false, false);

@@ -24,6 +24,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.Checkable;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -56,6 +57,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
     private final ProgressButton addButton;
 
     private boolean needDivider;
+    private ImageView optionsButton;
     private Button currentButton;
     private AnimatorSet animatorSet;
     private TLRPC.StickerSetCovered stickersSet;
@@ -124,6 +126,30 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
         addView(imageView, LayoutHelper.createFrameRelatively(48, 48, Gravity.START | Gravity.TOP, 12, 8, 0, 0));
     }
 
+    public void setCurrentAccount(int account) {
+        imageView.getImageReceiver().setCurrentAccount(account);
+    }
+
+    public void setOnOptionsClick(OnClickListener listener) {
+        if (optionsButton == null) {
+            optionsButton = new ImageView(getContext());
+            optionsButton.setScaleType(ImageView.ScaleType.CENTER);
+            optionsButton.setImageResource(R.drawable.msg_actions);
+            optionsButton.setColorFilter(Theme.getColor(Theme.key_stickers_menu), android.graphics.PorterDuff.Mode.MULTIPLY);
+            optionsButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
+            optionsButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+            addView(optionsButton, LayoutHelper.createFrameRelatively(40, 48, Gravity.END | Gravity.CENTER_VERTICAL));
+            for (View button : new View[]{addButton, deleteButton}) {
+                if (button == null) continue;
+                MarginLayoutParams layout = (MarginLayoutParams) button.getLayoutParams();
+                if (LocaleController.isRTL) layout.leftMargin += AndroidUtilities.dp(40);
+                else layout.rightMargin += AndroidUtilities.dp(40);
+            }
+            requestLayout();
+        }
+        optionsButton.setOnClickListener(listener);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
@@ -131,8 +157,9 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
 
     @Override
     protected void measureChildWithMargins(View child, int parentWidthMeasureSpec, int widthUsed, int parentHeightMeasureSpec, int heightUsed) {
-        if (checkable && child == textView) {
-            widthUsed += Math.max(addButton.getMeasuredWidth(), deleteButton.getMeasuredWidth());
+        if (child == textView || child == valueTextView) {
+            if (checkable) widthUsed += Math.max(addButton.getMeasuredWidth(), deleteButton.getMeasuredWidth());
+            if (optionsButton != null) widthUsed += AndroidUtilities.dp(40);
         }
         super.measureChildWithMargins(child, parentWidthMeasureSpec, widthUsed, parentHeightMeasureSpec, heightUsed);
     }

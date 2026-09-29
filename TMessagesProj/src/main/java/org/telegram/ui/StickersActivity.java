@@ -102,6 +102,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPacksController;
+
 public class StickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private static final int MENU_ARCHIVE = 0;
@@ -628,7 +630,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         if (view == null || !(view.getParent() instanceof StickerSetCell)) return;
         final StickerSetCell cell = (StickerSetCell) view.getParent();
         final TLRPC.TL_messages_stickerSet set = cell.getStickersSet();
+        final BlockedStickerPacksController blockedPacks = BlockedStickerPacksController.getInstance(currentAccount);
         ItemOptions.makeOptions(StickersActivity.this, cell)
+            .add(blockedPacks.isBlocked(set.set) ? R.drawable.msg_cancel : R.drawable.msg_block,
+                LocaleController.getString(blockedPacks.isBlocked(set.set) ? R.string.UnblockStickerPack : R.string.BlockStickerPack), () -> blockedPacks.toggle(set.set))
             .add(R.drawable.msg_archive, LocaleController.getString(R.string.StickersHide), () -> {
                 MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), set, !set.set.archived ? 1 : 2, StickersActivity.this, true, true);
             })

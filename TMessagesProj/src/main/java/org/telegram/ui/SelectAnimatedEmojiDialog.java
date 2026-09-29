@@ -142,6 +142,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPreview;
+
 public class SelectAnimatedEmojiDialog extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public final static int TYPE_EMOJI_STATUS = 0;
@@ -3199,7 +3201,15 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         return Math.max(300, Math.min(45, count) * 25L);
     }
 
-    public class ImageViewEmoji extends View {
+    public class ImageViewEmoji extends View implements RecyclerListView.ItemClickInterceptor {
+        private final BlockedStickerPreview blockedStickerPreview = new BlockedStickerPreview();
+
+        @Override
+        public boolean interceptItemClick() {
+            AnimatedEmojiDrawable emoji = drawable instanceof AnimatedEmojiDrawable ? (AnimatedEmojiDrawable) drawable : null;
+            return blockedStickerPreview.onClick(this, emoji != null ? emoji.getImageReceiver() : imageReceiver,
+                    emoji != null ? emoji.getDocument() : document);
+        }
         public boolean empty = false;
         public boolean notDraw = false;
         public int position;
@@ -3451,6 +3461,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
         @Override
         protected void onDetachedFromWindow() {
+            blockedStickerPreview.reset();
             super.onDetachedFromWindow();
             if (!attached) {
                 return;

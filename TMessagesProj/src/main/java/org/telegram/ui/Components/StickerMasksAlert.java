@@ -64,6 +64,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPreview;
+
 @SuppressWarnings("unchecked")
 public class StickerMasksAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -1424,6 +1426,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
+                    cell.getImageView().setCurrentAccount(currentAccount);
                     cell.setSticker(sticker, cacheParents.get(position), false);
                     cell.setRecent(recentStickers[typeIndex(currentType)].contains(sticker));
                     break;
@@ -1556,7 +1559,13 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         }
     }
 
-    private class ImageViewEmoji extends BackupImageView {
+    private class ImageViewEmoji extends BackupImageView implements RecyclerListView.ItemClickInterceptor {
+        private final BlockedStickerPreview blockedStickerPreview = new BlockedStickerPreview();
+
+        @Override
+        public boolean interceptItemClick() {
+            return blockedStickerPreview.onClick(this, drawable != null ? drawable.getImageReceiver() : imageReceiver, document);
+        }
 
         private boolean ignoring;
         public int position;
@@ -1598,6 +1607,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
         @Override
         protected void onDetachedFromWindow() {
+            blockedStickerPreview.reset();
             super.onDetachedFromWindow();
             if (drawable != null) {
                 drawable.removeView(this);
@@ -1976,6 +1986,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
+                    cell.getImageView().setCurrentAccount(currentAccount);
                     cell.setSticker(sticker, null, cacheParent.get(position), positionToEmoji.get(position), false);
                     cell.setRecent(recentStickers[typeIndex(currentType)].contains(sticker) || favouriteStickers.contains(sticker));
                     break;

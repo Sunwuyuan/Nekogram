@@ -1986,6 +1986,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         int type = holder.getItemViewType();
         if (type == 4) {
             StickerCell stickerCell = (StickerCell) holder.itemView;
+            stickerCell.setCurrentAccount(currentAccount);
             if (position >= 0 && position < stickers.size()) {
                 StickerResult result = stickers.get(position);
                 stickerCell.setSticker(result.sticker, result.parent);

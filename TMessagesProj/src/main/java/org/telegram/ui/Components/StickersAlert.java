@@ -109,6 +109,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPacksController;
+
 public class StickersAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     public final static boolean DISABLE_STICKER_EDITOR = false;
@@ -144,6 +146,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private TextView descriptionTextView;
     private ActionBarMenuItem optionsButton;
     private ActionBarMenuSubItem deleteItem;
+    private ActionBarMenuSubItem blockItem;
     private AnimatedTextView pickerBottomLayout;
     private PremiumButtonView premiumButtonView;
     private FrameLayout pickerBottomFrameLayout;
@@ -581,6 +584,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         inputStickerSet = set;
         stickerSet = loadedSet;
         parentFragment = baseFragment;
+        if (baseFragment != null) currentAccount = baseFragment.getCurrentAccount();
         loadStickerSet(forceRequest);
         init(context);
     }
@@ -1128,7 +1132,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         });
         optionsButton.setDelegate(this::onSubItemClick);
         optionsButton.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
-        optionsButton.setVisibility(inputStickerSet != null ? View.VISIBLE : View.GONE);
+        optionsButton.setVisibility(inputStickerSet != null || stickerSet != null ? View.VISIBLE : View.GONE);
 
         RadialProgressView progressView = new RadialProgressView(context);
         emptyView.addView(progressView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -1163,6 +1167,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         stickerPreviewLayout.setOnClickListener(v -> hidePreview());
 
         stickerImageView = new BackupImageView(context);
+        stickerImageView.getImageReceiver().setCurrentAccount(currentAccount);
+        stickerImageView.getImageReceiver().setAllowBlockedStickerPreview(true);
         stickerImageView.setAspectFit(true);
         stickerImageView.setLayerNum(7);
         stickerPreviewLayout.addView(stickerImageView);
@@ -1226,6 +1232,16 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     }
 
     private void checkOptions() {
+        if (stickerSet != null && stickerSet.set != null) {
+            boolean blocked = BlockedStickerPacksController.getInstance(currentAccount).isBlocked(stickerSet.set);
+            CharSequence text = LocaleController.getString(blocked ? R.string.UnblockStickerPack : R.string.BlockStickerPack);
+            int icon = blocked ? R.drawable.msg_cancel : R.drawable.msg_block;
+            if (blockItem == null) {
+                blockItem = optionsButton.addSubItem(6, icon, text);
+            } else {
+                blockItem.setTextAndIcon(text, icon);
+            }
+        }
         final MediaDataController mediaDataController = MediaDataController.getInstance(currentAccount);
         boolean notInstalled = stickerSet == null || !mediaDataController.isStickerPackInstalled(stickerSet.set.id);
         if (stickerSet != null && stickerSet.set != null && stickerSet.set.creator && deleteItem == null && !DISABLE_STICKER_EDITOR) {
@@ -1327,6 +1343,10 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     private void onSubItemClick(int id) {
         if (stickerSet == null) {
+            return;
+        }
+        if (id == 6) {
+            BlockedStickerPacksController.getInstance(currentAccount).toggle(stickerSet.set);
             return;
         }
         String stickersUrl;
@@ -2291,6 +2311,9 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            if (holder.itemView instanceof StickerEmojiCell) {
+                ((StickerEmojiCell) holder.itemView).getImageView().setCurrentAccount(currentAccount);
+            }
             if (stickerSetCovereds != null) {
                 switch (holder.getItemViewType()) {
                     case 0:

@@ -3,6 +3,13 @@
     <string name="Nekogram" translatable="false">Nekogram</string>
     <string name="NekogramBeta" translatable="false">Nekogram Beta</string>
     <string name="NekoSettings">Neko Settings</string>
+    <string name="BlockedStickerPacks">Blocked sticker packs</string>
+    <string name="BlockStickerPack">Block</string>
+    <string name="ViewStickerPack">View pack</string>
+    <string name="UnblockStickerPack">Unblock</string>
+    <string name="BlockedStickerPacksInfo">Stickers from these packs are mosaicked for this account on this device. Tap a sticker to reveal it temporarily, then tap again to use it. Blocking does not remove or archive a pack.</string>
+    <string name="BlockedStickerPacksEmpty">No blocked sticker packs. Use a pack’s overflow menu to block it.</string>
+    <string name="BlockedStickerReveal">Blocked sticker. Tap to reveal.</string>
     <string name="PreferIPv6">Prefer connecting through IPv6</string>
     <string name="MessageMenu">Message menu</string>
     <string name="HidePhone">Hide my phone number</string>

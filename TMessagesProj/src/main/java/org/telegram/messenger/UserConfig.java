@@ -21,6 +21,7 @@ import org.telegram.tgnet.tl.TL_account;
 
 import java.util.Arrays;
 
+import tw.nekomimi.nekogram.helpers.BlockedStickerPacksController;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 
 public class UserConfig extends BaseController {
@@ -471,6 +472,7 @@ public class UserConfig extends BaseController {
     }
 
     public void clearConfig() {
+        BlockedStickerPacksController.getInstance(currentAccount).clear();
         getPreferences().edit().clear().apply();
 
         sharingMyLocationUntil = 0;

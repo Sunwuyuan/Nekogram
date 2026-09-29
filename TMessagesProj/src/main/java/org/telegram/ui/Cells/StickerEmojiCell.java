@@ -45,10 +45,16 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ListView.RecyclerListViewWithOverlayDraw;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
 
-public class StickerEmojiCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, RecyclerListViewWithOverlayDraw.OverlayView {
+public class StickerEmojiCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, RecyclerListViewWithOverlayDraw.OverlayView, RecyclerListView.ItemClickInterceptor {
+
+    @Override
+    public boolean interceptItemClick() {
+        return imageView.revealBlockedSticker();
+    }
 
     private ImageReceiver imageView;
     private PremiumLockIconView premiumIconView;
@@ -373,7 +379,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                 }
             }
         }
-        info.setContentDescription(descr);
+        info.setContentDescription(imageView.isBlockedStickerHidden() ? LocaleController.getString(R.string.BlockedStickerReveal) : descr);
         info.setEnabled(true);
     }
 

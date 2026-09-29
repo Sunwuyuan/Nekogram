@@ -171,6 +171,7 @@ import tw.nekomimi.nekogram.NekoConfig;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import tw.nekomimi.nekogram.helpers.BlockedStickerPreview;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 
 @SuppressLint("ViewConstructor")
@@ -1460,7 +1461,22 @@ public class EmojiView extends FrameLayout implements
     }
 
     private boolean premiumBulletin = true;
-    public static class ImageViewEmoji extends ImageView {
+    public static class ImageViewEmoji extends ImageView implements RecyclerListView.ItemClickInterceptor {
+        private final BlockedStickerPreview blockedStickerPreview = new BlockedStickerPreview();
+
+        @Override
+        public boolean interceptItemClick() {
+            if (span == null || imageReceiver == null) return false;
+            TLRPC.Document document = span.document != null ? span.document : AnimatedEmojiDrawable.findDocument(imageReceiver.getCurrentAccount(), span.getDocumentId());
+            return blockedStickerPreview.onClick(this, imageReceiver, document);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            blockedStickerPreview.reset();
+            super.onDetachedFromWindow();
+        }
+
         public int position;
 
         public ImageReceiver imageReceiver;
@@ -6907,6 +6923,7 @@ public class EmojiView extends FrameLayout implements
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
+                    cell.getImageView().setCurrentAccount(currentAccount);
                     cell.setSticker(sticker, cacheParents.get(position), false);
                     cell.setRecent(recentStickers.contains(sticker));
                     break;
@@ -9828,6 +9845,7 @@ public class EmojiView extends FrameLayout implements
                 case 0: {
                     TLRPC.Document sticker = (TLRPC.Document) cache.get(position);
                     StickerEmojiCell cell = (StickerEmojiCell) holder.itemView;
+                    cell.getImageView().setCurrentAccount(currentAccount);
                     cell.setSticker(sticker, null, cacheParent.get(position), positionToEmoji.get(position), false);
                     cell.setRecent(recentStickers.contains(sticker) || favouriteStickers.contains(sticker));
                     break;
