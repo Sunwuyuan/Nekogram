@@ -31,12 +31,18 @@ jobs:
         run: |
           python3 Tools/test_blocked_sticker_packs.py
           python3 Tools/test_verify_debug_apk.py
+      - name: Build arm64 native client libraries
+        run: >-
+          ./gradlew :TMessagesProj:externalNativeBuildDebug
+          -PstandaloneDebug=true -Pandroid.injected.build.abi=arm64-v8a
+          --no-daemon --no-parallel --console=plain --max-workers=1
+          '-Dorg.gradle.jvmargs=-Xmx1g -Dfile.encoding=UTF-8'
       - name: Assemble standalone arm64 debug APK
         run: >-
           ./gradlew :TMessagesProj_App:assembleDebug
           -PstandaloneDebug=true -Pandroid.injected.build.abi=arm64-v8a
-          --no-daemon --console=plain --max-workers=2
-          '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'
+          --no-daemon --no-parallel --console=plain --max-workers=1
+          '-Dorg.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8'
       - name: Verify generated client APK
         run: python3 Tools/verify_debug_apk.py TMessagesProj_App/build/intermediates/apk/debug/*-arm64-v8a.apk
       - name: Upload debug APK
