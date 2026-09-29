@@ -33,6 +33,11 @@ public class AnalyticsHelper {
 
     public static void start(Application application) {
         preferences = application.getSharedPreferences("nekoanalytics", Application.MODE_PRIVATE);
+        if (BuildConfig.STANDALONE_DEBUG) {
+            analyticsDisabled = true;
+            sendBugReport = false;
+            return;
+        }
         analyticsDisabled = !Extra.FORCE_ANALYTICS && preferences.getBoolean("analyticsDisabled", false);
         sendBugReport = Extra.FORCE_ANALYTICS || preferences.getBoolean("sendBugReport", true);
         if (analyticsDisabled) {

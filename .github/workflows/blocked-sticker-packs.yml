@@ -13,14 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
       - name: Test persistence, reveal lifecycle, and export isolation
-        run: python3 Tools/test_blocked_sticker_packs.py
+        run: |
+          python3 Tools/test_blocked_sticker_packs.py
+          python3 Tools/test_verify_debug_apk.py
       - name: Check patch whitespace
-        run: git show --format= --check HEAD
+        run: git diff --check HEAD^ HEAD
 
   android-compile:
     runs-on: ubuntu-latest

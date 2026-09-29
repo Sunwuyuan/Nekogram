@@ -7,6 +7,13 @@ plugins {
     id 'io.sentry.android.gradle'
 }
 
+def standaloneDebug = providers.gradleProperty('standaloneDebug').map { it.toBoolean() }.getOrElse(false)
+
+// Standalone debug APKs intentionally have no Firebase project configuration.
+tasks.matching { it.name == 'processDebugGoogleServices' }.configureEach {
+    enabled = !standaloneDebug
+}
+
 dependencies {
     implementation project(':TMessagesProj')
 }
@@ -52,7 +59,7 @@ android {
 
     buildTypes {
         debug {
-            if (localProperties.getProperty("storeFile") != null) {
+            if (!standaloneDebug && localProperties.getProperty("storeFile") != null) {
                 signingConfig signingConfigs.sign
             }
             applicationIdSuffix ".beta"
@@ -79,7 +86,11 @@ android {
 
         multiDexEnabled true
 
-        manifestPlaceholders = [MAPS_API_KEY: localProperties.get("mapsApiKey")]
+        manifestPlaceholders = standaloneDebug ? [:] : [MAPS_API_KEY: localProperties.get("mapsApiKey")]
+    }
+
+    if (standaloneDebug) {
+        sourceSets.debug.manifest.srcFile 'src/standaloneDebug/AndroidManifest.xml'
     }
 
     bundle {

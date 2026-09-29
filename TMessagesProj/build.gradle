@@ -140,6 +140,7 @@ android {
     }
 
     defaultConfig {
+        buildConfigField('boolean', 'STANDALONE_DEBUG', 'false')
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
@@ -166,6 +167,7 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField('boolean', 'STANDALONE_DEBUG', providers.gradleProperty('standaloneDebug').map { it.toBoolean().toString() }.getOrElse('false'))
             buildConfigField("long", "VERSION_CODE", "${APP_VERSION_CODE}")
             buildConfigField("String","VERSION_NAME","\"${APP_VERSION_NAME}\"")
             buildConfigField("long", "BUILD_VERSION", "${TG_APP_VERSION_CODE}")

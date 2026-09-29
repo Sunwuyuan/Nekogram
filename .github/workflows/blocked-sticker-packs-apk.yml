@@ -1,0 +1,48 @@
+name: Blocked sticker packs APK
+
+on:
+  push:
+    branches: ["tailgram/blocked-sticker-packs"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'build-tools;37.0.0 ndk;27.3.13750724 platforms;android-37.0 cmake;3.22.1'
+      - name: Run blocked sticker regression tests
+        run: |
+          python3 Tools/test_blocked_sticker_packs.py
+          python3 Tools/test_verify_debug_apk.py
+      - name: Assemble standalone arm64 debug APK
+        run: >-
+          ./gradlew :TMessagesProj_App:assembleDebug
+          -PstandaloneDebug=true -Pandroid.injected.build.abi=arm64-v8a
+          --no-daemon --console=plain --max-workers=2
+          '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8'
+      - name: Verify generated client APK
+        run: python3 Tools/verify_debug_apk.py TMessagesProj_App/build/intermediates/apk/debug/*-arm64-v8a.apk
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tailgram-blocked-sticker-packs-debug-arm64-v8a
+          path: TMessagesProj_App/build/intermediates/apk/debug/*-arm64-v8a.apk
+          if-no-files-found: error
+          retention-days: 7
